@@ -1,4 +1,4 @@
-module github.com/ipv02/auth
+module github.com/ipv02/chat-server
 
 go 1.23
 
