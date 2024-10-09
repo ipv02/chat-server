@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"log"
-	"net"
 
 	desc "github.com/ipv02/chat-server/grpc/pkg/chat_v1"
 )
@@ -19,6 +20,7 @@ type server struct {
 }
 
 // Create ...
+// nolint:revive // ctx is required for interface but unused
 func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
 	log.Printf("CreateRequest: Usernames: %v", req.Usernames)
 
@@ -28,6 +30,7 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 }
 
 // Delete ...
+// nolint:revive // ctx is required for interface but unused
 func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*emptypb.Empty, error) {
 	log.Printf("Deleting object with ID: %d", req.GetId())
 
@@ -36,6 +39,7 @@ func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*emptypb.
 }
 
 // SendMessage ...
+// nolint:revive // ctx is required for interface but unused
 func (s *server) SendMessage(ctx context.Context, req *desc.SendMessageRequest) (*emptypb.Empty, error) {
 	log.Printf("SendMessageRequest - From: %v, Text: %v, Timestamp: %v", req.From, req.Text, req.Timestamp)
 
