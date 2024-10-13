@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 
 	"google.golang.org/grpc"
@@ -54,7 +53,7 @@ func (s *server) CreateChat(_ context.Context, req *desc.CreateChatRequest) (*de
 	log.Printf("CreateRequest: Users IDs: %v, Chat Name: %s", req.UsersId, req.ChatName)
 
 	return &desc.CreateChatResponse{
-		Id: rand.Int63(),
+		Id: 1,
 	}, nil
 }
 
