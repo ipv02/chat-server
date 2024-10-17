@@ -8,7 +8,7 @@ import (
 	"github.com/ipv02/chat-server/config"
 )
 
-var _ сonfig.GRPCConfig = (*grpcConfig)(nil)
+var _ config.GRPCConfig = (*grpcConfig)(nil)
 
 const (
 	grpcHostEnvName = "GRPC_HOST"

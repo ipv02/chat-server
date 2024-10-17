@@ -20,7 +20,7 @@ const grpcPort = 50052
 var configPath string
 
 func init() {
-	flag.StringVar(&configPath, "config-path", ".env", "path to config file")
+	flag.StringVar(&configPath, "config2-path", ".env", "path to config2 file")
 }
 
 type server struct {
@@ -33,7 +33,7 @@ func main() {
 
 	err := config.Load(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatalf("failed to load config2: %v", err)
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
