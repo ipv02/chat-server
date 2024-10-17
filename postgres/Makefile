@@ -1,5 +1,3 @@
-include .env
-
 LOCAL_BIN:=$(CURDIR)/bin
 GOOSE_BIN:=$(LOCAL_BIN)/goose
 

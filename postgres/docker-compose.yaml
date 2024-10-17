@@ -1,22 +1,38 @@
 volumes:
-  chat_postgres_volume:
+  chat_postgres_volume_local:
+  chat_postgres_volume_prod:
 
 services:
-  pg:
+  pg-local:
     image: postgres:14-alpine3.17
-    environment:
-      - "POSTGRES_DB=${PG_DATABASE_NAME}"
-      - "POSTGRES_USER=${PG_USER}"
-      - "POSTGRES_PASSWORD=${PG_PASSWORD}"
+    env_file:
+      - "local.env"
     ports:
-      - "${PG_PORT}:5432"
+      - "54323:5432"
     volumes:
-      - chat_postgres_volume:/var/lib/postgresql/data
+      - chat_postgres_volume_local:/var/lib/postgresql/data
 
-  migrator:
+  pg-prod:
+    image: postgres:14-alpine3.17
+    env_file:
+      - prod.env
+    ports:
+      - "54324:5432"
+    volumes:
+      - chat_postgres_volume_prod:/var/lib/postgresql/data
+
+  migrator-local:
     build:
       context: .
-      dockerfile: migration.Dockerfile
+      dockerfile: migration_local.Dockerfile
     restart: on-failure
     environment:
-      DB_HOST: db
+      DB_HOST: pg-local
+
+  migrator-prod:
+    build:
+      context: .
+      dockerfile: migration_prod.Dockerfile
+    restart: on-failure
+    environment:
+      DB_HOST: pg-prod

@@ -2,6 +2,8 @@ module github.com/ipv02/chat-server/grpc
 
 go 1.23
 
+// replace github.com/ipv02/chat-server/config => ../config
+
 require (
 	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.35.1

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -10,16 +11,31 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/ipv02/chat-server/config"
 	desc "github.com/ipv02/chat-server/grpc/pkg/chat_v1"
 )
 
 const grpcPort = 50052
+
+var configPath string
+
+func init() {
+	flag.StringVar(&configPath, "config-path", ".env", "path to config file")
+}
 
 type server struct {
 	desc.UnimplementedChatV1Server
 }
 
 func main() {
+	flag.Parse()
+	ctx := context.Background()
+
+	err := config.Load(configPath)
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 
 	if err != nil {
