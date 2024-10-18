@@ -6,7 +6,7 @@ services:
   pg-local:
     image: postgres:14-alpine3.17
     env_file:
-      - "../config/local.env"
+      - "local.env"
     ports:
       - "54323:5432"
     volumes:
@@ -15,7 +15,7 @@ services:
   pg-prod:
     image: postgres:14-alpine3.17
     env_file:
-      - ../config/prod.env
+      - "prod.env"
     ports:
       - "54324:5432"
     volumes:
