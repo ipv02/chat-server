@@ -1,6 +1,6 @@
 FROM golang:1.23-alpine AS builder
 
-COPY . /github.com/ipv02/chat-server/grpc/source/
+COPY . /github.com/ipv02/chat-server/
 WORKDIR /github.com/ipv02/chat-server/grpc/source/
 
 RUN go mod download
