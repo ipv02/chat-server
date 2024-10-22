@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/brianvoe/gofakeit"
@@ -14,8 +15,11 @@ const dbDSN = "host=localhost port=54322 dbname=chat user=chat-user password=cha
 func main() {
 	ctx := context.Background()
 
+	dbCtx, dbCancel := context.WithTimeout(ctx, 3*time.Second)
+	defer dbCancel()
+
 	// Создаем пул соединений с базой данных
-	pool, err := pgxpool.Connect(ctx, dbDSN)
+	pool, err := pgxpool.Connect(dbCtx, dbDSN)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

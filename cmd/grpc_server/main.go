@@ -7,15 +7,17 @@ import (
 	"flag"
 	"log"
 	"net"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/ipv02/chat-server/config"
-	"github.com/ipv02/chat-server/config/env"
-	"github.com/ipv02/chat-server/pkg/chat_v1"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/ipv02/chat-server/config"
+	"github.com/ipv02/chat-server/config/env"
+	"github.com/ipv02/chat-server/pkg/chat_v1"
 )
 
 var configPath string
@@ -32,6 +34,9 @@ type server struct {
 func main() {
 	flag.Parse()
 	ctx := context.Background()
+
+	dbCtx, dbCancel := context.WithTimeout(ctx, 3*time.Second)
+	defer dbCancel()
 
 	err := config.Load(configPath)
 	if err != nil {
@@ -53,7 +58,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	pool, err := pgxpool.Connect(ctx, pgConfig.DSN())
+	pool, err := pgxpool.Connect(dbCtx, pgConfig.DSN())
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
@@ -70,18 +75,7 @@ func main() {
 	}
 }
 
-// CreateChat обрабатывает CreateChatRequest для создания нового чата.
-//
-// Логирует информацию о запросе (список идентификаторов пользователей и название чата)
-// и возвращает CreateChatResponse с сгенерированным идентификатором чата.
-//
-// Параметры:
-//   - ctx: Контекст для управления временем жизни запроса и дедлайнами.
-//   - req: Запрос CreateChatRequest, содержащий список идентификаторов пользователей и название чата.
-//
-// Возвращает:
-//   - *desc.CreateChatResponse: Ответ с идентификатором созданного чата.
-//   - error: Возвращает ошибку в случае неудачи, или nil при успешном выполнении.
+// CreateChat запрос для создания нового чата.
 func (s *server) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest) (*chat_v1.CreateChatResponse, error) {
 	log.Printf("CreateRequest: Users IDs: %v, Chat Name: %s", req.UsersId, req.ChatName)
 
@@ -152,18 +146,7 @@ func (s *server) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest)
 	}, nil
 }
 
-// DeleteChat обрабатывает DeleteChatRequest для удаления чата по ID.
-//
-// Логирует идентификатор удаляемого чата и возвращает пустой ответ
-// при успешном выполнении.
-//
-// Параметры:
-//   - ctx: Контекст для управления временем жизни запроса и дедлайнами.
-//   - req: Запрос DeleteChatRequest, содержащий ID чата для удаления.
-//
-// Возвращает:
-//   - *emptypb.Empty: Пустой ответ при успешном выполнении операции.
-//   - error: Возвращает ошибку в случае неудачи, или nil при успешном выполнении.
+// DeleteChat запрос для удаления чата.
 func (s *server) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest) (*emptypb.Empty, error) {
 	log.Printf("Deleting object with ID: %d", req.GetId())
 
@@ -220,18 +203,7 @@ func (s *server) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest)
 	return &emptypb.Empty{}, nil
 }
 
-// SendMessage обрабатывает SendMessageRequest для отправки сообщения в чат.
-//
-// Логирует информацию о сообщении (отправитель, текст и метка времени) и возвращает пустой ответ
-// при успешном выполнении.
-//
-// Параметры:
-//   - ctx: Контекст для управления временем жизни запроса и дедлайнами.
-//   - req: Запрос SendMessageRequest, содержащий данные сообщения (отправитель, текст, метка времени).
-//
-// Возвращает:
-//   - *emptypb.Empty: Пустой ответ при успешном выполнении операции.
-//   - error: Возвращает ошибку в случае неудачи, или nil при успешном выполнении.
+// SendMessage запрос для отправки сообщения в чат.
 func (s *server) SendMessage(ctx context.Context, req *chat_v1.SendMessageRequest) (*emptypb.Empty, error) {
 	log.Printf("SendMessageRequest - From: %v, Text: %v, Timestamp: %v", req.From, req.Text, req.Timestamp)
 
