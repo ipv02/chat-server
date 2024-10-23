@@ -2,9 +2,8 @@ package env
 
 import (
 	"errors"
+	"github.com/ipv02/chat-server/internal/config"
 	"os"
-
-	"github.com/ipv02/chat-server/config"
 )
 
 var _ config.PGConfig = (*pgConfig)(nil)
