@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/ipv02/chat-server/internal/converter"
+	"github.com/ipv02/chat-server/internal/service"
 	"log"
 	"net"
 	"time"
@@ -14,8 +16,8 @@ import (
 
 	"github.com/ipv02/chat-server/internal/config"
 	"github.com/ipv02/chat-server/internal/config/env"
-	"github.com/ipv02/chat-server/internal/repository"
-	"github.com/ipv02/chat-server/internal/repository/chat"
+	chatRepository "github.com/ipv02/chat-server/internal/repository/chat"
+	chatService "github.com/ipv02/chat-server/internal/service/chat"
 	"github.com/ipv02/chat-server/pkg/chat_v1"
 )
 
@@ -27,7 +29,7 @@ func init() {
 
 type server struct {
 	chat_v1.UnimplementedChatV1Server
-	chatRepository repository.ChatRepository
+	chatService service.ChatService
 }
 
 func main() {
@@ -63,11 +65,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	chatRepo := chat.NewRepository(pool)
+	chatRepo := chatRepository.NewRepository(pool)
+	chatServ := chatService.NewService(chatRepo)
 
 	s := grpc.NewServer()
 	reflection.Register(s)
-	chat_v1.RegisterChatV1Server(s, &server{chatRepository: chatRepo})
+	chat_v1.RegisterChatV1Server(s, &server{chatService: chatServ})
 
 	log.Printf("server listening at: %v", lis.Addr())
 
@@ -78,22 +81,22 @@ func main() {
 
 // CreateChat запрос для создания нового чата.
 func (s *server) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest) (*chat_v1.CreateChatResponse, error) {
-	userObj, err := s.chatRepository.CreateChat(ctx, req)
+	id, err := s.chatService.CreateChat(ctx, converter.ToChatCreateFromReq(req))
 	if err != nil {
 		log.Printf("failed to create chat: %v", err)
 		return nil, err
 	}
 
-	log.Printf("created chat: %v", userObj)
+	log.Printf("created chat: %v", id)
 
 	return &chat_v1.CreateChatResponse{
-		Id: userObj.Id,
+		Id: id,
 	}, nil
 }
 
 // DeleteChat запрос для удаления чата.
 func (s *server) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest) (*emptypb.Empty, error) {
-	_, err := s.chatRepository.DeleteChat(ctx, req)
+	err := s.chatService.DeleteChat(ctx, req.Id)
 	if err != nil {
 		log.Printf("failed to delete chat: %v", err)
 		return nil, err
@@ -106,7 +109,7 @@ func (s *server) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest)
 
 // SendMessage запрос для отправки сообщения в чат.
 func (s *server) SendMessage(ctx context.Context, req *chat_v1.SendMessageRequest) (*emptypb.Empty, error) {
-	_, err := s.chatRepository.SendMessage(ctx, req)
+	err := s.chatService.SendMessage(ctx, converter.ToChatSendMessage(req))
 	if err != nil {
 		log.Printf("failed to send message: %v", err)
 		return nil, err

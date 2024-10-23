@@ -8,10 +8,9 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/ipv02/chat-server/internal/model"
 	"github.com/ipv02/chat-server/internal/repository"
-	"github.com/ipv02/chat-server/pkg/chat_v1"
 )
 
 const (
@@ -37,11 +36,11 @@ func NewRepository(db *pgxpool.Pool) repository.ChatRepository {
 	return &repo{db: db}
 }
 
-func (r *repo) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest) (*chat_v1.CreateChatResponse, error) {
+func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		log.Printf("failed to begin transaction: %v", err)
-		return nil, err
+		return 0, err
 	}
 
 	defer func() {
@@ -53,23 +52,23 @@ func (r *repo) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest) (
 	builderChatInsert := sq.Insert(tableChatName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(tableChatNameColumn).
-		Values(req.ChatName).
+		Values(chat.ChatName).
 		Suffix("RETURNING id")
 
 	query, args, err := builderChatInsert.ToSql()
 	if err != nil {
 		log.Printf("failed to build query: %v", err)
-		return nil, err
+		return 0, err
 	}
 
 	var chatID int64
 	err = r.db.QueryRow(ctx, query, args...).Scan(&chatID)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
-		return nil, err
+		return 0, err
 	}
 
-	for _, userID := range req.UsersId {
+	for _, userID := range chat.UsersId {
 		builderChatUsersInsert := sq.Insert(tableChatUsersName).
 			PlaceholderFormat(sq.Dollar).
 			Columns(tableChatUsersChatIdColumn, tableChatUsersUserIdColumn).
@@ -78,32 +77,30 @@ func (r *repo) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest) (
 		query, args, err := builderChatUsersInsert.ToSql()
 		if err != nil {
 			log.Printf("failed to build query: %v", err)
-			return nil, err
+			return 0, err
 		}
 
 		_, err = r.db.Exec(ctx, query, args...)
 		if err != nil {
 			log.Printf("failed to execute query: %v", err)
-			return nil, err
+			return 0, err
 		}
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		log.Printf("failed to commit transaction: %v", err)
-		return nil, err
+		return 0, err
 	}
 
-	return &chat_v1.CreateChatResponse{
-		Id: chatID,
-	}, nil
+	return chatID, nil
 }
 
-func (r *repo) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest) (*emptypb.Empty, error) {
+func (r *repo) DeleteChat(ctx context.Context, id int64) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		log.Printf("failed to begin transaction: %v", err)
-		return nil, err
+		return err
 	}
 
 	defer func() {
@@ -113,65 +110,65 @@ func (r *repo) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest) (
 	}()
 
 	deleteChatBuilder := sq.Delete(tableChatName).
-		Where(sq.Eq{tableChatIdColumn: req.Id}).
+		Where(sq.Eq{tableChatIdColumn: id}).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err := deleteChatBuilder.ToSql()
 	if err != nil {
 		log.Printf("failed to build query: %v", err)
-		return nil, err
+		return err
 	}
 
 	_, err = tx.Exec(ctx, query, args...)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
-		return nil, err
+		return err
 	}
 
 	deleteChatUsersBuilder := sq.Delete(tableChatUsersName).
-		Where(sq.Eq{tableChatUsersChatIdColumn: req.Id}).
+		Where(sq.Eq{tableChatUsersChatIdColumn: id}).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = deleteChatUsersBuilder.ToSql()
 	if err != nil {
 		log.Printf("failed to build query: %v", err)
-		return nil, err
+		return err
 	}
 
 	_, err = tx.Exec(ctx, query, args...)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
-		return nil, err
+		return err
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		log.Printf("failed to commit transaction: %v", err)
-		return nil, err
+		return err
 	}
 
-	return &emptypb.Empty{}, nil
+	return err
 }
 
-func (r *repo) SendMessage(ctx context.Context, req *chat_v1.SendMessageRequest) (*emptypb.Empty, error) {
+func (r *repo) SendMessage(ctx context.Context, chat *model.ChatSendMessage) error {
 	var messageID int64
 	insertMessageBuilder := sq.Insert(tableMessagesName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(tableMessagesUserIdColumn, tableMessagesMessageColumn, tableMessagesCreatedAtColumn).
-		Values(req.From, req.Text, req.Timestamp).
+		Values(chat.From, chat.Text, chat.Timestamp).
 		Suffix("RETURNING id")
 
 	query, args, err := insertMessageBuilder.ToSql()
 	if err != nil {
 		log.Printf("failed to build query: %v", err)
-		return nil, err
+		return err
 	}
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(&messageID)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
-		return nil, err
+		return err
 	}
 
-	return &emptypb.Empty{}, nil
+	return err
 }
