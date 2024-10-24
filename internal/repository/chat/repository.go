@@ -15,15 +15,15 @@ import (
 
 const (
 	tableChatName       = "chat"
-	tableChatIdColumn   = "id"
+	tableChatIDColumn   = "id"
 	tableChatNameColumn = "name"
 
 	tableChatUsersName         = "chat_users"
-	tableChatUsersChatIdColumn = "chat_id"
-	tableChatUsersUserIdColumn = "user_id"
+	tableChatUsersChatIDColumn = "chat_id"
+	tableChatUsersUserIDColumn = "user_id"
 
 	tableMessagesName            = "messages"
-	tableMessagesUserIdColumn    = "user_id"
+	tableMessagesUserIDColumn    = "user_id"
 	tableMessagesMessageColumn   = "message"
 	tableMessagesCreatedAtColumn = "created_at"
 )
@@ -32,6 +32,7 @@ type repo struct {
 	db *pgxpool.Pool
 }
 
+// NewRepository создает новый экземпляр UserRepository с подключением к базе данных
 func NewRepository(db *pgxpool.Pool) repository.ChatRepository {
 	return &repo{db: db}
 }
@@ -68,10 +69,10 @@ func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, e
 		return 0, err
 	}
 
-	for _, userID := range chat.UsersId {
+	for _, userID := range chat.UsersID {
 		builderChatUsersInsert := sq.Insert(tableChatUsersName).
 			PlaceholderFormat(sq.Dollar).
-			Columns(tableChatUsersChatIdColumn, tableChatUsersUserIdColumn).
+			Columns(tableChatUsersChatIDColumn, tableChatUsersUserIDColumn).
 			Values(userID, chatID)
 
 		query, args, err := builderChatUsersInsert.ToSql()
@@ -110,7 +111,7 @@ func (r *repo) DeleteChat(ctx context.Context, id int64) error {
 	}()
 
 	deleteChatBuilder := sq.Delete(tableChatName).
-		Where(sq.Eq{tableChatIdColumn: id}).
+		Where(sq.Eq{tableChatIDColumn: id}).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err := deleteChatBuilder.ToSql()
@@ -126,7 +127,7 @@ func (r *repo) DeleteChat(ctx context.Context, id int64) error {
 	}
 
 	deleteChatUsersBuilder := sq.Delete(tableChatUsersName).
-		Where(sq.Eq{tableChatUsersChatIdColumn: id}).
+		Where(sq.Eq{tableChatUsersChatIDColumn: id}).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = deleteChatUsersBuilder.ToSql()
@@ -154,7 +155,7 @@ func (r *repo) SendMessage(ctx context.Context, chat *model.ChatSendMessage) err
 	var messageID int64
 	insertMessageBuilder := sq.Insert(tableMessagesName).
 		PlaceholderFormat(sq.Dollar).
-		Columns(tableMessagesUserIdColumn, tableMessagesMessageColumn, tableMessagesCreatedAtColumn).
+		Columns(tableMessagesUserIDColumn, tableMessagesMessageColumn, tableMessagesCreatedAtColumn).
 		Values(chat.From, chat.Text, chat.Timestamp).
 		Suffix("RETURNING id")
 
