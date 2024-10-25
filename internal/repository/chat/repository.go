@@ -7,8 +7,9 @@ import (
 	"log"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4"
 
+	"github.com/ipv02/chat-server/internal/client/db"
 	"github.com/ipv02/chat-server/internal/model"
 	"github.com/ipv02/chat-server/internal/repository"
 )
@@ -29,16 +30,16 @@ const (
 )
 
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
 // NewRepository создает новый экземпляр UserRepository с подключением к базе данных
-func NewRepository(db *pgxpool.Pool) repository.ChatRepository {
+func NewRepository(db db.Client) repository.ChatRepository {
 	return &repo{db: db}
 }
 
 func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, error) {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.db.DB().BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		log.Printf("failed to begin transaction: %v", err)
 		return 0, err
@@ -62,8 +63,13 @@ func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, e
 		return 0, err
 	}
 
+	q := db.Query{
+		Name:     "chat_repository.Create",
+		QueryRaw: query,
+	}
+
 	var chatID int64
-	err = r.db.QueryRow(ctx, query, args...).Scan(&chatID)
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&chatID)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
 		return 0, err
@@ -81,7 +87,12 @@ func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, e
 			return 0, err
 		}
 
-		_, err = r.db.Exec(ctx, query, args...)
+		q := db.Query{
+			Name:     "chat_users_repository.Create",
+			QueryRaw: query,
+		}
+
+		_, err = r.db.DB().ExecContext(ctx, q, args...)
 		if err != nil {
 			log.Printf("failed to execute query: %v", err)
 			return 0, err
@@ -98,7 +109,7 @@ func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, e
 }
 
 func (r *repo) DeleteChat(ctx context.Context, id int64) error {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.db.DB().BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		log.Printf("failed to begin transaction: %v", err)
 		return err
@@ -165,7 +176,12 @@ func (r *repo) SendMessage(ctx context.Context, chat *model.ChatSendMessage) err
 		return err
 	}
 
-	err = r.db.QueryRow(ctx, query, args...).Scan(&messageID)
+	q := db.Query{
+		Name:     "chat_repository.SendMessage",
+		QueryRaw: query,
+	}
+
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&messageID)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
 		return err

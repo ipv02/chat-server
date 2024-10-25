@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 
-	"github.com/jackc/pgx/v4/pgxpool"
-
 	"github.com/ipv02/chat-server/internal/api/chat"
+	"github.com/ipv02/chat-server/internal/client/db"
+	"github.com/ipv02/chat-server/internal/client/db/pg"
+	"github.com/ipv02/chat-server/internal/client/db/transaction"
 	"github.com/ipv02/chat-server/internal/closer"
 	"github.com/ipv02/chat-server/internal/config"
 	"github.com/ipv02/chat-server/internal/config/env"
@@ -20,7 +21,8 @@ type serviceProvider struct {
 	pgConfig   config.PGConfig
 	grpcConfig config.GRPCConfig
 
-	pgPool         *pgxpool.Pool
+	dbClient       db.Client
+	txManager      db.TxManager
 	chatRepository repository.ChatRepository
 
 	chatService service.ChatService
@@ -58,32 +60,37 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfig {
 	return s.grpcConfig
 }
 
-func (s *serviceProvider) PgPool(ctx context.Context) *pgxpool.Pool {
-	if s.pgPool == nil {
-		pool, err := pgxpool.Connect(ctx, s.PgConfig().DSN())
+func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
+	if s.dbClient == nil {
+		cl, err := pg.New(ctx, s.PgConfig().DSN())
 		if err != nil {
 			log.Fatalf("failed to connect to database: %s", err.Error())
 		}
 
-		err = pool.Ping(ctx)
+		err = cl.DB().Ping(ctx)
 		if err != nil {
 			log.Fatalf("failed to ping database: %s", err.Error())
 		}
 
-		closer.Add(func() error {
-			pool.Close()
-			return nil
-		})
+		closer.Add(cl.Close)
 
-		s.pgPool = pool
+		s.dbClient = cl
 	}
 
-	return s.pgPool
+	return s.dbClient
+}
+
+func (s *serviceProvider) TxManage(ctx context.Context) db.TxManager {
+	if s.txManager == nil {
+		s.txManager = transaction.NewTransactionManager(s.DBClient(ctx).DB())
+	}
+
+	return s.txManager
 }
 
 func (s *serviceProvider) ChatRepository(ctx context.Context) repository.ChatRepository {
 	if s.chatRepository == nil {
-		s.chatRepository = chatRepository.NewRepository(s.PgPool(ctx))
+		s.chatRepository = chatRepository.NewRepository(s.DBClient(ctx))
 	}
 
 	return s.chatRepository
@@ -91,7 +98,7 @@ func (s *serviceProvider) ChatRepository(ctx context.Context) repository.ChatRep
 
 func (s *serviceProvider) ChatService(ctx context.Context) service.ChatService {
 	if s.chatService == nil {
-		s.chatService = chatService.NewService(s.ChatRepository(ctx))
+		s.chatService = chatService.NewService(s.ChatRepository(ctx), s.TxManage(ctx))
 	}
 
 	return s.chatService
