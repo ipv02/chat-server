@@ -7,7 +7,17 @@ import (
 )
 
 func (s *serv) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, error) {
-	id, err := s.chatRepository.CreateChat(ctx, chat)
+	var id int64
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		id, errTx = s.chatRepository.CreateChat(ctx, chat)
+		if errTx != nil {
+			return errTx
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return 0, err
 	}

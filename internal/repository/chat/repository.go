@@ -2,13 +2,9 @@ package chat
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4"
-
 	"github.com/ipv02/chat-server/internal/client/db"
 	"github.com/ipv02/chat-server/internal/model"
 	"github.com/ipv02/chat-server/internal/repository"
@@ -39,18 +35,6 @@ func NewRepository(db db.Client) repository.ChatRepository {
 }
 
 func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, error) {
-	tx, err := r.db.DB().BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		log.Printf("failed to begin transaction: %v", err)
-		return 0, err
-	}
-
-	defer func() {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, sql.ErrTxDone) {
-			log.Printf("tx.Rollback failed: %v", err)
-		}
-	}()
-
 	builderChatInsert := sq.Insert(tableChatName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(tableChatNameColumn).
@@ -99,28 +83,10 @@ func (r *repo) CreateChat(ctx context.Context, chat *model.ChatCreate) (int64, e
 		}
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		log.Printf("failed to commit transaction: %v", err)
-		return 0, err
-	}
-
 	return chatID, nil
 }
 
 func (r *repo) DeleteChat(ctx context.Context, id int64) error {
-	tx, err := r.db.DB().BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		log.Printf("failed to begin transaction: %v", err)
-		return err
-	}
-
-	defer func() {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, sql.ErrTxDone) {
-			log.Printf("tx.Rollback failed: %v", err)
-		}
-	}()
-
 	deleteChatBuilder := sq.Delete(tableChatName).
 		Where(sq.Eq{tableChatIDColumn: id}).
 		PlaceholderFormat(sq.Dollar)
@@ -131,7 +97,12 @@ func (r *repo) DeleteChat(ctx context.Context, id int64) error {
 		return err
 	}
 
-	_, err = tx.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "chat_repository.Delete",
+		QueryRaw: query,
+	}
+
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("failed to execute query: %v", err)
 		return err
@@ -147,15 +118,14 @@ func (r *repo) DeleteChat(ctx context.Context, id int64) error {
 		return err
 	}
 
-	_, err = tx.Exec(ctx, query, args...)
-	if err != nil {
-		log.Printf("failed to execute query: %v", err)
-		return err
+	q = db.Query{
+		Name:     "chat_users_repository.Delete",
+		QueryRaw: query,
 	}
 
-	err = tx.Commit(ctx)
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
-		log.Printf("failed to commit transaction: %v", err)
+		log.Printf("failed to execute query: %v", err)
 		return err
 	}
 
