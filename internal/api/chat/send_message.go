@@ -12,6 +12,10 @@ import (
 
 // SendMessage запрос для отправки сообщения в чат.
 func (i *Implementation) SendMessage(ctx context.Context, req *chat_v1.SendMessageRequest) (*emptypb.Empty, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	err := i.chatService.SendMessage(ctx, converter.ToChatSendMessage(req))
 	if err != nil {
 		log.Printf("failed to send message: %v", err)

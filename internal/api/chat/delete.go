@@ -10,6 +10,10 @@ import (
 
 // DeleteChat запрос для удаления чата.
 func (i *Implementation) DeleteChat(ctx context.Context, req *chat_v1.DeleteChatRequest) (*emptypb.Empty, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	err := i.chatService.DeleteChat(ctx, req.Id)
 	if err != nil {
 		log.Printf("failed to delete chat: %v", err)
