@@ -109,13 +109,11 @@ func (r *repo) insertChatUsers(ctx context.Context, chatID int64, userIDs []stri
 
 // DeleteChat удаление чата в базе данных
 func (r *repo) DeleteChat(ctx context.Context, id int64) error {
-	// Удаление самого чата
 	if err := r.deleteChatByID(ctx, id); err != nil {
 		log.Printf("failed to delete chat: %v", err)
 		return err
 	}
 
-	// Удаление пользователей, связанных с чатом
 	if err := r.deleteChatUsersByChatID(ctx, id); err != nil {
 		log.Printf("failed to delete chat users: %v", err)
 		return err
