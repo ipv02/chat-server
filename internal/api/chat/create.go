@@ -10,6 +10,10 @@ import (
 
 // CreateChat запрос для создания нового чата.
 func (i *Implementation) CreateChat(ctx context.Context, req *chat_v1.CreateChatRequest) (*chat_v1.CreateChatResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	id, err := i.chatService.CreateChat(ctx, converter.ToChatCreateFromReq(req))
 	if err != nil {
 		log.Printf("failed to create chat: %v", err)
