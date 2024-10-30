@@ -18,3 +18,19 @@ func NewService(chatRepository repository.ChatRepository, txManager db.TxManager
 		txManager:      txManager,
 	}
 }
+
+// NewMockService мок конструктор для создания связи между сервисным слоем и репо слоем
+func NewMockService(deps ...interface{}) chatService.ChatService {
+	service := service{}
+
+	for _, v := range deps {
+		switch s := v.(type) {
+		case repository.ChatRepository:
+			service.chatRepository = s
+		case db.TxManager:
+			service.txManager = s
+		}
+	}
+
+	return &service
+}

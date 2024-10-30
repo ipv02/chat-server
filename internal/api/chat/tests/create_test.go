@@ -33,7 +33,7 @@ func TestCreate(t *testing.T) {
 		usersId = []string{
 			strconv.FormatInt(gofakeit.Int64(), 10),
 		}
-		chatName string
+		chatName = gofakeit.Name()
 
 		serviceErr = fmt.Errorf("service error")
 
@@ -51,8 +51,6 @@ func TestCreate(t *testing.T) {
 			Id: id,
 		}
 	)
-
-	defer t.Cleanup(mc.Finish)
 
 	tests := []struct {
 		name            string

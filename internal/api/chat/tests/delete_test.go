@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/brianvoe/gofakeit"
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -28,7 +27,7 @@ func TestDelete(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id = gofakeit.Int64()
+		id = int64(123) // gofakeit.Int64()
 
 		serviceErr = fmt.Errorf("service error")
 
