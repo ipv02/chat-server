@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/ipv02/chat-server/config"
+	"github.com/ipv02/chat-server/internal/config"
 )
 
 var _ config.PGConfig = (*pgConfig)(nil)

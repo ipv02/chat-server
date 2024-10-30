@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/ipv02/chat-server/config"
+	"github.com/ipv02/chat-server/internal/config"
 )
 
 var _ config.GRPCConfig = (*grpcConfig)(nil)
