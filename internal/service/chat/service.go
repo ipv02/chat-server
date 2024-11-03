@@ -32,5 +32,13 @@ func NewMockService(deps ...interface{}) chatService.ChatService {
 		}
 	}
 
+	if service.chatRepository == nil {
+		panic("chatRepository должен быть инициализирован")
+	}
+
+	if service.txManager == nil {
+		panic("txManager должен быть инициализирован")
+	}
+
 	return &service
 }
