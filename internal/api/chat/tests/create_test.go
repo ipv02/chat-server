@@ -30,7 +30,7 @@ func TestCreate(t *testing.T) {
 		mc  = minimock.NewController(t)
 
 		id      = gofakeit.Int64()
-		usersId = []string{
+		usersID = []string{
 			strconv.FormatInt(gofakeit.Int64(), 10),
 		}
 		chatName = gofakeit.Name()
@@ -38,12 +38,12 @@ func TestCreate(t *testing.T) {
 		serviceErr = fmt.Errorf("service error")
 
 		req = &chat_v1.CreateChatRequest{
-			UsersId:  usersId,
+			UsersId:  usersID,
 			ChatName: chatName,
 		}
 
 		serviceReq = &model.ChatCreate{
-			UsersID:  usersId,
+			UsersID:  usersID,
 			ChatName: chatName,
 		}
 

@@ -3,15 +3,17 @@ package tests
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/brianvoe/gofakeit"
 	"github.com/gojuno/minimock/v3"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ipv02/chat-server/internal/model"
 	"github.com/ipv02/chat-server/internal/repository"
 	repoMocks "github.com/ipv02/chat-server/internal/repository/mocks"
 	"github.com/ipv02/chat-server/internal/service/chat"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"testing"
 )
 
 func TestSendMessage(t *testing.T) {
